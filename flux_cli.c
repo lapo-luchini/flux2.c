@@ -16,6 +16,16 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#ifdef _WIN32
+  #include <windows.h>
+  #include <io.h>
+  #include <direct.h>
+  #define mkdir(path, mode) _mkdir(path)
+#else
+  #include <sys/stat.h>
+  #include <unistd.h>
+#endif
+
 #include "flux.h"
 #include "linenoise.h"
 #include "terminals.h"
@@ -201,12 +211,23 @@ static char *extract_size_from_prompt(const char *prompt, int *w, int *h) {
  * ====================================================================== */
 
 static int create_tmpdir(void) {
+#ifdef _WIN32
+    snprintf(state.tmpdir, sizeof(state.tmpdir), "flux-XXXXXX");
+    char *dir = _mktemp(state.tmpdir);
+    if (dir && mkdir(dir, 0755) != 0) dir = NULL;
+    if (!dir) {
+        fprintf(stderr, "Error: Cannot create temp directory: %s\n",
+                strerror(errno));
+        return -1;
+    }
+#else
     snprintf(state.tmpdir, sizeof(state.tmpdir), "/tmp/flux-XXXXXX");
     if (mkdtemp(state.tmpdir) == NULL) {
         fprintf(stderr, "Error: Cannot create temp directory: %s\n",
                 strerror(errno));
         return -1;
     }
+#endif
     return 0;
 }
 

@@ -246,8 +246,13 @@ int iterm2_display_image(const flux_image *img) {
     if (!img || !img->data) return -1;
 
     /* Create temp file for PNG */
+#ifdef _WIN32
+    char tmppath[] = "/tmp/flux_iterm_XXXXXX";
+    int fd = mkstemp(tmppath);
+#else
     char tmppath[] = "/tmp/flux_iterm_XXXXXX.png";
     int fd = mkstemps(tmppath, 4);
+#endif
     if (fd < 0) {
         fprintf(stderr, "iterm2: cannot create temp file\n");
         return -1;
